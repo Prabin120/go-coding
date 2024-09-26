@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -54,35 +53,22 @@ func (r *Question) GetQuestions() ([]models.Question, error) {
 	return questions, nil
 }
 
-func (r *Question) GetTestCases(questionId string) ([]models.TestCase, error) {
-	var testCases []models.TestCase
-	cursor, err := db.TestCasesCollection.Find(context.TODO(), bson.M{"questionId": questionId})
+func (r *Question) GetTestCases(questionId string) (*models.TestCase, error) {
+	var testCases models.TestCase
+	err := db.TestCasesCollection.FindOne(context.TODO(), bson.M{"questionId": questionId}).Decode(&testCases)
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(context.TODO(), &testCases); err != nil {
-		log.Fatal(err)
-	}
-	return testCases, nil
+	return &testCases, nil
 }
 
 // GetQuestion fetches a question by its ID and populates its test cases.
 func (r *Question) GetQuestionById(questionID string) (*models.Question, error) {
-	objID := questionID
 	var question models.Question
-	err := db.QuestionsCollection.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&question)
+	err := db.QuestionsCollection.FindOne(context.TODO(), bson.M{"_id": questionID}).Decode(&question)
 	if err != nil {
 		return nil, err
 	}
-	var testCases []models.TestCase
-	cursor, err := db.TestCasesCollection.Find(context.TODO(), bson.M{"questionId": objID, "isSample": true})
-	if err != nil {
-		return nil, err
-	}
-	if err = cursor.All(context.TODO(), &testCases); err != nil {
-		log.Fatal(err)
-	}
-	question.SampleTestCases = testCases
 	return &question, nil
 }
 
@@ -99,14 +85,10 @@ func (r *Question) CreateTestCase(testCase *models.TestCase) (*models.TestCase, 
 }
 
 func (r *Question) UpdateQuestionById(questionID string, updatedData bson.M) (*models.Question, error) {
-	objID, err := primitive.ObjectIDFromHex(questionID)
-	if err != nil {
-		return nil, err
-	}
 	updatedData["updatedAt"] = time.Now()
-	err = db.QuestionsCollection.FindOneAndUpdate(
+	err := db.QuestionsCollection.FindOneAndUpdate(
 		context.TODO(),
-		bson.M{"_id": objID},
+		bson.M{"_id": questionID},
 		bson.M{"$set": updatedData},
 	).Decode(&updatedData)
 	if err != nil {

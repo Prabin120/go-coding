@@ -5,8 +5,6 @@ import (
 	"code-compiler/repository"
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 type QuestionService struct {
@@ -88,15 +86,15 @@ func (svc *QuestionService) GetTestCases(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	res := &Response{}
 	vars := r.URL.Query()
-	questionId := vars.Get("questionId")
+	questionId := vars.Get("id")
 	// Call the controller to get all questions
-	questions, err := svc.Controller.GetTestCases(questionId)
+	tests, err := svc.Controller.GetTestCases(questionId)
 	if err != nil {
 		http.Error(w, "Error fetching questions: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	// Populate the response with the retrieved questions
-	res.Data = questions
+	res.Data = tests
 	// Send the questions as the response
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -134,11 +132,9 @@ func (svc *QuestionService) GetQuestionsByTag(w http.ResponseWriter, r *http.Req
 func (svc *QuestionService) UpdateQuestionById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	res := &Response{}
-
 	// Get the question ID from the URL parameters
-	vars := mux.Vars(r)
-	questionID := vars["id"]
-
+	vars := r.URL.Query()
+	questionID := vars.Get("id")
 	// Decode the incoming JSON request for the updated data
 	var updatedData map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {

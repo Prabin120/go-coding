@@ -30,6 +30,7 @@ func main() {
 	r.HandleFunc("/questions", questionService.GetQuestions).Methods(http.MethodGet)
 	r.HandleFunc("/questions/tag", questionService.GetQuestionsByTag).Methods(http.MethodGet)
 	r.HandleFunc("/testcases", questionService.CreateTestCase).Methods(http.MethodPost)
+	r.HandleFunc("/testcases", questionService.GetTestCases).Methods(http.MethodGet)
 
 	// Set up CORS with the desired options
 	corsOptions := handlers.AllowedOrigins([]string{"*"})
