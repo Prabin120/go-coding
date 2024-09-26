@@ -1,0 +1,22 @@
+# .air.toml
+# Configuration for air
+
+# Build settings
+[build]
+bin = "tmp/main" # The path to the binary
+cmd = "go build -o tmp/main ." # Command to build your application
+watch_dir = "." # The directory to watch for changes
+
+# Environment settings
+[env]
+APP_ENV = "development" # Your environment variables
+
+# Log settings
+[log]
+time = true # Show time in logs
+
+# Others
+[color]
+enabled = true # Enable colored output
+
+# You can add more configurations as needed
