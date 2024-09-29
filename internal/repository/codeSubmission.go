@@ -23,38 +23,41 @@ type CodeRunner struct {
 func compileCode(codePath, language string) (string, error) {
 	fileBaseName := filepath.Base(codePath)
 	fileBaseNameWithoutExt := fileBaseName[:len(fileBaseName)-len(filepath.Ext(fileBaseName))]
-
 	var cmd *exec.Cmd
 	var outputFileName string
+
+	// Determine the output filename based on the language
 	switch language {
-	case "python", "js": // Python and JS don't need compilation
+	case "py", "js": // Python and JS don't need compilation
 		return codePath, nil
 	case "c":
-		outputFileName = fileBaseNameWithoutExt + ".out"
+		outputFileName = filepath.Join(filepath.Dir(codePath), fileBaseNameWithoutExt+".out")
 		cmd = exec.Command("gcc", codePath, "-o", outputFileName)
 	case "cpp":
-		outputFileName = fileBaseNameWithoutExt + ".out"
+		outputFileName = filepath.Join(filepath.Dir(codePath), fileBaseNameWithoutExt+".out")
 		cmd = exec.Command("g++", codePath, "-o", outputFileName)
 	case "java":
-		outputFileName = fileBaseNameWithoutExt + ".class"
+		outputFileName = filepath.Join(filepath.Dir(codePath), fileBaseNameWithoutExt+".class")
 		cmd = exec.Command("javac", codePath)
 	case "go":
-		outputFileName = fileBaseNameWithoutExt + ".out"
+		outputFileName = filepath.Join(filepath.Dir(codePath), fileBaseNameWithoutExt+".out")
 		cmd = exec.Command("go", "build", "-o", outputFileName, codePath)
 	default:
 		return "", fmt.Errorf("unsupported language: %s", language)
 	}
 
+	// Run the command and check for errors
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("compilation failed: %v", err)
 	}
+	fileRemoving(codePath)
 	return outputFileName, nil
 }
 
 // GetCommandForLanguage returns the exec command based on the language
 func getCommandForLanguage(compiledFilePath, language string) (*exec.Cmd, error) {
 	switch language {
-	case "python":
+	case "py":
 		return exec.Command("python3", compiledFilePath), nil
 	case "cpp", "c":
 		return exec.Command(compiledFilePath), nil
@@ -167,7 +170,7 @@ func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, la
 
 // FileWriter writes the code to a file
 func fileWriter(code string, language string) string {
-	filename := fmt.Sprintf("./codeFiles/%s%s", language, uuid.NewString())
+	filename := fmt.Sprintf("./codeFiles/%s%s.%s", language, uuid.NewString(), language)
 	println(filename)
 	file, err := os.Create(filename)
 	if err != nil {
@@ -226,11 +229,11 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 	if compiledFilePath == "" {
 		return nil, 0, 0, fmt.Errorf("file creation failed")
 	}
+
 	question, err := r.Question.GetQuestionById(data.QuestionId)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("failed to retrieve question: %v", err)
 	}
-
 	// var passed *commontypes.TestResult
 	numberOfPassedTests := 0
 	totalTestCases := 0
@@ -242,12 +245,13 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 	}
 	totalTestCases = len(testCases.IOPairs)
 	failedCase, numberOfPassedTests, err = runAllTestCases(compiledFilePath, testCases.IOPairs, data.Language)
-	if err != nil {
-		return failedCase, numberOfPassedTests, totalTestCases, err
-	}
 
 	if !fileRemoving(compiledFilePath) {
 		fmt.Println("File not deleted")
+	}
+
+	if err != nil {
+		return failedCase, numberOfPassedTests, totalTestCases, err
 	}
 
 	return failedCase, numberOfPassedTests, totalTestCases, nil
