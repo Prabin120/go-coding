@@ -3,6 +3,7 @@ package main
 import (
 	"code-compiler/db"
 	"code-compiler/internal/repository"
+	"code-compiler/internal/routes"
 	"code-compiler/internal/usecases"
 	"context"
 	"fmt"
@@ -26,21 +27,21 @@ func main() {
 	codeRunService := &usecases.CodeRunnerService{Runner: codeRunner}
 
 	// Register routes from different files
-	// routes.RegisterQuestionRoutes(r, questionService)
-	// routes.RegisterCodeRoutes(r, codeRunService)
+	routes.RegisterQuestionRoutes(r, questionService)
+	routes.RegisterCodeRoutes(r, codeRunService)
 
 	r.HandleFunc("/", HealthCheck).Methods(http.MethodGet)
 	r.HandleFunc("/test", runTest).Methods(http.MethodGet)
-	r.HandleFunc("/question", questionService.CreateQuestion).Methods(http.MethodPost)
-	r.HandleFunc("/question", questionService.GetQuestionById).Methods(http.MethodGet)
-	r.HandleFunc("/question", questionService.UpdateQuestionById).Methods(http.MethodPut)
-	r.HandleFunc("/questions", questionService.GetQuestions).Methods(http.MethodGet)
-	r.HandleFunc("/questions/tag", questionService.GetQuestionsByTag).Methods(http.MethodGet)
-	r.HandleFunc("/testcases", questionService.CreateTestCase).Methods(http.MethodPost)
-	r.HandleFunc("/testcases", questionService.GetTestCases).Methods(http.MethodGet)
-	r.HandleFunc("/run-code", codeRunService.RunTest).Methods(http.MethodPost)
-	r.HandleFunc("/submit-code", codeRunService.SubmitTest).Methods(http.MethodPost)
-	r.HandleFunc("/submit", questionService.GetQuestions).Methods(http.MethodPost)
+	// r.HandleFunc("/question", questionService.CreateQuestion).Methods(http.MethodPost)
+	// r.HandleFunc("/question", questionService.GetQuestionById).Methods(http.MethodGet)
+	// r.HandleFunc("/question", questionService.UpdateQuestionById).Methods(http.MethodPut)
+	// r.HandleFunc("/questions", questionService.GetQuestions).Methods(http.MethodGet)
+	// r.HandleFunc("/questions/tag", questionService.GetQuestionsByTag).Methods(http.MethodGet)
+	// r.HandleFunc("/testcases", questionService.CreateTestCase).Methods(http.MethodPost)
+	// r.HandleFunc("/testcases", questionService.GetTestCases).Methods(http.MethodGet)
+	// r.HandleFunc("/run-code", codeRunService.RunTest).Methods(http.MethodPost)
+	// r.HandleFunc("/submit-code", codeRunService.SubmitTest).Methods(http.MethodPost)
+	// r.HandleFunc("/submit", questionService.GetQuestions).Methods(http.MethodGet)
 
 	// Set up CORS with the desired options
 	corsOptions := handlers.AllowedOrigins([]string{"*"})

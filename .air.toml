@@ -1,22 +1,47 @@
-# .air.toml
-# Configuration for air
+# .air.toml configuration file
 
-# Build settings
+# Root directory
+root = "."
+tmp_dir = "tmp"
+debug = false
+cmd = "go run ./cmd/main.go"
+
 [build]
-bin = "tmp/main" # The path to the binary
-cmd = "go build -o tmp/main ." # Command to build your application
-watch_dir = "." # The directory to watch for changes
+bin = "tmp/main"
+cmd = "go build -o tmp/main ./cmd/main.go"
+# Add other files or directories to watch for changes
+include_ext = ["go", "tpl", "tmpl", "html", "sql", "js", "ts", "css", "env"]
+exclude_dir = ["tmp", "vendor", "internal/repository/mocks"]
 
-# Environment settings
-[env]
-APP_ENV = "development" # Your environment variables
-
-# Log settings
 [log]
-time = true # Show time in logs
+level = "debug"
 
-# Others
 [color]
-enabled = true # Enable colored output
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
 
-# You can add more configurations as needed
+[dirs]
+# Watching the internal directory and db directory for changes
+watch_dir = [
+    "cmd",
+    "internal",
+    "db"
+]
+
+[watch]
+# Ignore certain files or directories
+exclude_dir = ["tmp", "vendor"]
+
+# Extensions to watch
+include_ext = ["go"]
+
+# Files to exclude
+exclude_file = ["go.sum", "go.mod"]
+
+# Interval for polling changes (in milliseconds)
+delay = 1000
+
+[deploy]
+bin = "cmd/main.go"

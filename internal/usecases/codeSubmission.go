@@ -5,7 +5,6 @@ import (
 	"code-compiler/internal/models"
 	"code-compiler/internal/repository"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -16,7 +15,6 @@ type CodeRunnerService struct {
 
 // RunTest handles incoming HTTP requests to run code and return test case results
 func (svc *CodeRunnerService) RunTest(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Its coming here")
 	w.Header().Set("Content-Type", "application/json")
 	res := &models.Response{}
 	// Decode the incoming request body into CodeRunnerType struct
@@ -25,7 +23,6 @@ func (svc *CodeRunnerService) RunTest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid input: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println(data)
 	// Validate request data
 	if data.Code == "" || data.Language == "" || data.QuestionId == "" {
 		http.Error(w, "code, language, run type, and questionId are required", http.StatusBadRequest)
@@ -64,7 +61,7 @@ func (svc *CodeRunnerService) SubmitTest(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	// Call the repository function to execute the code
-	failedCase, err, passedTestCases, totalTestCases := svc.Runner.ExecuteSubmit(commontypes.CodeRunnerType{
+	failedCase, passedTestCases, totalTestCases, err := svc.Runner.ExecuteSubmit(commontypes.CodeRunnerType{
 		Language:   data.Language,
 		Code:       data.Code,
 		QuestionId: data.QuestionId,

@@ -166,7 +166,8 @@ func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, la
 
 // FileWriter writes the code to a file
 func fileWriter(code string, language string) string {
-	filename := fmt.Sprintf("/codeFiles/%s%s", language, uuid.NewString())
+	filename := fmt.Sprintf("./codeFiles/%s%s", language, uuid.NewString())
+	println(filename)
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println("Error creating file:", err)
@@ -232,14 +233,14 @@ func (r *CodeRunner) ExecuteTest(data commontypes.CodeRunnerType) ([]commontypes
 	return results, nil
 }
 
-func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontypes.TestResult, error, int, int) {
+func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontypes.TestResult, int, int, error) {
 	compiledFilePath := fileWriter(data.Code, data.Language)
 	if compiledFilePath == "" {
-		return nil, fmt.Errorf("file creation failed"), 0, 0
+		return nil, 0, 0, fmt.Errorf("file creation failed")
 	}
 	question, err := r.Question.GetQuestionById(data.QuestionId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve question: %v", err), 0, 0
+		return nil, 0, 0, fmt.Errorf("failed to retrieve question: %v", err)
 	}
 
 	// var passed *commontypes.TestResult
@@ -249,17 +250,17 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 
 	testCases, err := r.Question.GetTestCases(question.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve test cases: %v", err), 0, totalTestCases
+		return nil, 0, totalTestCases, fmt.Errorf("failed to retrieve test cases: %v", err)
 	}
 	totalTestCases = len(testCases.IOPairs)
 	failedCase, err, numberOfPassedTests = runAllTestCases(compiledFilePath, testCases.IOPairs, data.Language)
 	if err != nil {
-		return failedCase, err, numberOfPassedTests, totalTestCases
+		return failedCase, numberOfPassedTests, totalTestCases, err
 	}
 
 	if !fileRemoving(compiledFilePath) {
 		fmt.Println("File not deleted")
 	}
 
-	return failedCase, nil, numberOfPassedTests, totalTestCases
+	return failedCase, numberOfPassedTests, totalTestCases, nil
 }
