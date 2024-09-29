@@ -1,8 +1,8 @@
 package usecases
 
 import (
-	"code-compiler/models"
-	"code-compiler/repository"
+	"code-compiler/internal/models"
+	"code-compiler/internal/repository"
 	"encoding/json"
 	"net/http"
 )
@@ -11,14 +11,9 @@ type QuestionService struct {
 	Controller *repository.Question
 }
 
-type Response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
-}
-
 func (svc *QuestionService) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 	var question models.Question
 	if err := json.NewDecoder(r.Body).Decode(&question); err != nil {
 		http.Error(w, "Invalid input: "+err.Error(), http.StatusBadRequest)
@@ -37,7 +32,7 @@ func (svc *QuestionService) CreateQuestion(w http.ResponseWriter, r *http.Reques
 }
 func (svc *QuestionService) GetQuestionById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 
 	// Get the question ID from the URL parameters
 	queryParams := r.URL.Query()
@@ -65,7 +60,7 @@ func (svc *QuestionService) GetQuestionById(w http.ResponseWriter, r *http.Reque
 
 func (svc *QuestionService) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 
 	// Call the controller to get all questions
 	questions, err := svc.Controller.GetQuestions()
@@ -84,7 +79,7 @@ func (svc *QuestionService) GetQuestions(w http.ResponseWriter, r *http.Request)
 
 func (svc *QuestionService) GetTestCases(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 	vars := r.URL.Query()
 	questionId := vars.Get("id")
 	// Call the controller to get all questions
@@ -104,7 +99,7 @@ func (svc *QuestionService) GetTestCases(w http.ResponseWriter, r *http.Request)
 
 func (svc *QuestionService) GetQuestionsByTag(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 	// Get the tag from the URL parameters
 	vars := r.URL.Query()
 	tag := vars.Get("tag")
@@ -131,7 +126,7 @@ func (svc *QuestionService) GetQuestionsByTag(w http.ResponseWriter, r *http.Req
 
 func (svc *QuestionService) UpdateQuestionById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 	// Get the question ID from the URL parameters
 	vars := r.URL.Query()
 	questionID := vars.Get("id")
@@ -161,7 +156,7 @@ func (svc *QuestionService) UpdateQuestionById(w http.ResponseWriter, r *http.Re
 
 func (svc *QuestionService) CreateTestCase(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	res := &Response{}
+	res := &models.Response{}
 
 	// Decode the incoming JSON request into the test case model
 	var testCase models.TestCase

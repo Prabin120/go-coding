@@ -2,7 +2,7 @@ package repository
 
 import (
 	"code-compiler/db"
-	"code-compiler/models"
+	"code-compiler/internal/models"
 	"context"
 	"log"
 	"time"
