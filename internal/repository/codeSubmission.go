@@ -19,21 +19,6 @@ type CodeRunner struct {
 	Question *Question // Add a reference to Question
 }
 
-// SupportedLanguages maps languages to their compilation commands
-type SupportedLanguages map[string]string
-
-// GetSupportedLanguages returns a map of supported languages and their compilation commands
-func getSupportedLanguages() SupportedLanguages {
-	return SupportedLanguages{
-		"python": "python3",
-		"cpp":    "g++",
-		"c":      "gcc",
-		"java":   "javac",
-		"go":     "go build -o", // Build command for Go
-		"js":     "node",        // Execution command for JavaScript
-	}
-}
-
 // CompileCode compiles code based on the language
 func compileCode(codePath, language string) (string, error) {
 	fileBaseName := filepath.Base(codePath)
@@ -64,6 +49,22 @@ func compileCode(codePath, language string) (string, error) {
 		return "", fmt.Errorf("compilation failed: %v", err)
 	}
 	return outputFileName, nil
+}
+
+// GetCommandForLanguage returns the exec command based on the language
+func getCommandForLanguage(compiledFilePath, language string) (*exec.Cmd, error) {
+	switch language {
+	case "python":
+		return exec.Command("python3", compiledFilePath), nil
+	case "cpp", "c":
+		return exec.Command(compiledFilePath), nil
+	case "java":
+		return exec.Command("java", compiledFilePath), nil
+	case "go", "js":
+		return exec.Command(compiledFilePath), nil
+	default:
+		return nil, fmt.Errorf("unsupported language: %s", language)
+	}
 }
 
 // RunTestCases executes the compiled code with the provided test cases
@@ -114,7 +115,7 @@ func runTestCases(compiledFilePath string, testCases []models.InputOutput, langu
 }
 
 // RunAllTestCases runs test cases and stops on the first failure
-func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, language string) (*commontypes.TestResult, error, int) {
+func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, language string) (*commontypes.TestResult, int, error) {
 	numberOfPassedTests := 0
 
 	for i, testCase := range testCases {
@@ -122,7 +123,7 @@ func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, la
 
 		cmd, err := getCommandForLanguage(compiledFilePath, language)
 		if err != nil {
-			return nil, err, numberOfPassedTests
+			return nil, numberOfPassedTests, err
 		}
 
 		cmd.Stdin = bytes.NewBufferString(testCase.Input)
@@ -138,10 +139,10 @@ func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, la
 		select {
 		case err := <-errChan:
 			if err != nil {
-				return nil, fmt.Errorf("failed to execute test case %d: %v", i+1, err), numberOfPassedTests
+				return nil, numberOfPassedTests, fmt.Errorf("failed to execute test case %d: %v", i+1, err)
 			}
 		case <-time.After(2 * time.Second):
-			return nil, fmt.Errorf("test case %d timed out", i+1), numberOfPassedTests
+			return nil, numberOfPassedTests, fmt.Errorf("test case %d timed out", i+1)
 		}
 
 		actualOutput := string(bytes.TrimSpace(outputBytes))
@@ -155,13 +156,13 @@ func runAllTestCases(compiledFilePath string, testCases []models.InputOutput, la
 				ExpectedOutput: expectedOutput,
 				ActualOutput:   actualOutput,
 				Passed:         false,
-			}, nil, numberOfPassedTests
+			}, numberOfPassedTests, nil
 		}
 
 		numberOfPassedTests++
 	}
 
-	return nil, nil, numberOfPassedTests
+	return nil, numberOfPassedTests, nil
 }
 
 // FileWriter writes the code to a file
@@ -195,33 +196,20 @@ func fileRemoving(filename string) bool {
 	return true
 }
 
-// GetCommandForLanguage returns the exec command based on the language
-func getCommandForLanguage(compiledFilePath, language string) (*exec.Cmd, error) {
-	switch language {
-	case "python":
-		return exec.Command("python3", compiledFilePath), nil
-	case "cpp", "c":
-		return exec.Command(compiledFilePath), nil
-	case "java":
-		return exec.Command("java", compiledFilePath), nil
-	case "go", "js":
-		return exec.Command(compiledFilePath), nil
-	default:
-		return nil, fmt.Errorf("unsupported language: %s", language)
-	}
-}
-
 // Execute runs the code for either testing or submission
 func (r *CodeRunner) ExecuteTest(data commontypes.CodeRunnerType) ([]commontypes.TestResult, error) {
-	compiledFilePath := fileWriter(data.Code, data.Language)
-	if compiledFilePath == "" {
+	codeFileath := fileWriter(data.Code, data.Language)
+	if codeFileath == "" {
 		return nil, fmt.Errorf("file creation failed")
 	}
 	question, err := r.Question.GetQuestionById(data.QuestionId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve question: %v", err)
 	}
-
+	compiledFilePath, err := compileCode(codeFileath, data.Language)
+	if err != nil {
+		return nil, fmt.Errorf("code compilation failed: %v", err)
+	}
 	results, err := runTestCases(compiledFilePath, question.SampleTestCases, data.Language)
 	if err != nil {
 		return nil, err
@@ -253,7 +241,7 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 		return nil, 0, totalTestCases, fmt.Errorf("failed to retrieve test cases: %v", err)
 	}
 	totalTestCases = len(testCases.IOPairs)
-	failedCase, err, numberOfPassedTests = runAllTestCases(compiledFilePath, testCases.IOPairs, data.Language)
+	failedCase, numberOfPassedTests, err = runAllTestCases(compiledFilePath, testCases.IOPairs, data.Language)
 	if err != nil {
 		return failedCase, numberOfPassedTests, totalTestCases, err
 	}
