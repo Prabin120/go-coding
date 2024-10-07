@@ -9,11 +9,13 @@ type CodeRunnerType struct {
 
 // TestResult represents the result of executing a test case.
 type TestResult struct {
-	TestCaseNumber int    `json:"testCaseNumber"`
-	Input          string `json:"input"`
-	ExpectedOutput string `json:"expectedOutput"`
-	ActualOutput   string `json:"actualOutput"`
-	Passed         bool   `json:"passed"`
+	TestCaseNumber int     `json:"testCaseNumber"`
+	Input          string  `json:"input"`
+	ExpectedOutput string  `json:"expectedOutput"`
+	ActualOutput   string  `json:"actualOutput"`
+	Passed         bool    `json:"passed"`
+	TimeTaken      float64 `json:"timeTaken"`
+	MemoryUsed     float64 `json:"memoryUsed"`
 }
 
 // InputOutput represents the input and output for test cases.

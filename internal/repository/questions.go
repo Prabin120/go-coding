@@ -14,6 +14,7 @@ import (
 
 type Question struct {
 	MongoCollection *mongo.Collection
+	codeRunner      *CodeRunner
 }
 
 // CreateQuestion inserts a new question in the database.
@@ -96,3 +97,20 @@ func (r *Question) UpdateQuestionById(questionID string, updatedData bson.M) (*m
 	}
 	return r.GetQuestionById(questionID)
 }
+
+// CreateTestCase inserts a new test case in the database.
+// func (r *Question) UpdateSolution(questionId string, code string) (*models.TestCase, error) {
+// 	result, total, passed, err := r.codeRunner.ExecuteSubmit(commontypes.CodeRunnerType{
+// 		Language: "go",
+// 		Code: code,
+// 		QuestionId: questionId,
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if total != passed {
+// 		return nil, fmt.Errorf("The code is failed in testCases. For input: ", result.Input)
+// 	}
+
+// 	return testCase, nil
+// }
