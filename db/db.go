@@ -50,8 +50,7 @@ func ConnectDB() {
 
 func createIndexes() {
 	testCaseIndexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "questionId", Value: 1}}, // Index on questionID
-		Options: options.Index().SetUnique(true),       // Unique index
+		Keys: bson.D{{Key: "questionId", Value: 1}}, // Index on questionID
 	}
 	_, err := TestCasesCollection.Indexes().CreateOne(context.TODO(), testCaseIndexModel)
 	if err != nil {
@@ -62,15 +61,15 @@ func createIndexes() {
 
 	// Create unique index on title in QuestionsCollection
 	questionTitleIndexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "title", Value: 1}}, // Index on title
-		Options: options.Index().SetUnique(true),  // Unique index
+		Keys:    bson.D{{Key: "slug", Value: 1}}, // Index on title
+		Options: options.Index().SetUnique(true), // Unique index
 	}
 
 	_, err = QuestionsCollection.Indexes().CreateOne(context.TODO(), questionTitleIndexModel)
 	if err != nil {
 		log.Fatal("Failed to create index on QuestionsCollection: ", err)
 	} else {
-		fmt.Println("Unique index created on QuestionsCollection for title")
+		fmt.Println("Unique index created on QuestionsCollection for slug")
 	}
 }
 

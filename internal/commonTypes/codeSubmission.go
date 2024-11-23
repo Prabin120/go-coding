@@ -23,10 +23,3 @@ type InputOutput struct {
 	Input  string `json:"input"`
 	Output string `json:"output"`
 }
-
-// Question represents a coding question structure.
-// type Question struct {
-// 	ID              string        `json:"id"`
-// 	Content         string        `json:"content"`
-// 	SampleTestCases []InputOutput `json:"sampleTestCases"`
-// }

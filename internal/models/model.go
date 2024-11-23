@@ -6,6 +6,7 @@ type InputOutput struct {
 }
 
 type Response struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Status  bool        `json:"status,omitempty"`
 }
