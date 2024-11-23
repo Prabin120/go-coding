@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +22,7 @@ var (
 // ConnectDB establishes a connection to MongoDB and returns a client.
 func ConnectDB() {
 	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(filepath.Join(".env")); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
