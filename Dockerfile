@@ -2,10 +2,8 @@
 FROM golang:1.23.1-alpine AS builder
 
 # Install necessary tools (git, curl)
-RUN apk add --no-cache git curl
-
-# Install air (a hot-reload tool for Go)
-RUN go install github.com/air-verse/air@latest
+RUN apk add --no-cache git curl \
+&& go install github.com/air-verse/air@latest
 
 # Set the working directory
 WORKDIR /app
