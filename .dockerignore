@@ -1,0 +1,4 @@
+# Ignore files and folders
+.git
+.gitignore
+*.md

@@ -43,7 +43,7 @@ func main() {
 
 	fmt.Println("Start server on port 8080")
 	srv := &http.Server{
-		Addr:    ":8000",
+		Addr:    ":8080",
 		Handler: corsHandler.Handler(r),
 	}
 	stop := make(chan os.Signal, 1)
@@ -51,7 +51,7 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Println("Server error", err)
+			fmt.Println("Server error:", err)
 		}
 	}()
 	<-stop // Wait for an interrupt signal

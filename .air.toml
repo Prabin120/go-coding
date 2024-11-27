@@ -9,7 +9,6 @@ cmd = "go run ./main.go"
 [build]
 bin = "tmp/main"
 cmd = "go build -o tmp/main ./main.go"
-# Add other files or directories to watch for changes
 include_ext = ["go", "tpl", "tmpl", "html", "sql", "js", "ts", "css", "env"]
 exclude_dir = ["tmp", "vendor", "internal/repository/mocks", "codeFiles"]
 
@@ -25,7 +24,7 @@ runner = "green"
 [dirs]
 # Watching the internal directory and db directory for changes
 watch_dir = [
-    "cmd",
+    ".",
     "internal",
     "db"
 ]
@@ -35,13 +34,13 @@ watch_dir = [
 exclude_dir = ["tmp", "vendor", "codeFiles"]
 
 # Extensions to watch
-include_ext = ["go"]
+include_ext = ["go", "tpl", "tmpl", "html", "sql", "js", "ts", "css", "env"]
 
 # Files to exclude
 exclude_file = ["go.sum", "go.mod"]
 
 # Interval for polling changes (in milliseconds)
-delay = 1000
+poll = true
 
 [deploy]
-bin = "cmd/main.go"
+bin = "main.go"
