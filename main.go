@@ -38,7 +38,8 @@ func main() {
 		AllowedOrigins:   []string{"http://localhost:3000",
 								"http://localhost:3000/",
 								"https://aptitest.vercel.app",
-								"https://aptitest.vercel.app/"
+								"https://aptitest.vercel.app/",
+								"*"
 							},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
