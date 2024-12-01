@@ -35,7 +35,11 @@ func main() {
 
 	// CORS configuration using rs/cors
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://aptitest.vercel.app"},
+		AllowedOrigins:   []string{"http://localhost:3000",
+								"http://localhost:3000/",
+								"https://aptitest.vercel.app",
+								"https://aptitest.vercel.app/"
+							},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true, // Allow credentials if needed
