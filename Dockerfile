@@ -1,8 +1,12 @@
 # Step 1: Base image for building the Go application
 FROM golang:1.23.1-alpine AS builder
 
-# Install necessary tools (git, curl)
-RUN apk add --no-cache git curl
+# Install necessary tools (git, curl, and compilers/interpreters for various languages)
+RUN apk add --no-cache git curl \
+    python3 py3-pip \
+    gcc g++ musl-dev \
+    openjdk17 \
+    nodejs npm
 
 # Set the working directory
 WORKDIR /app
