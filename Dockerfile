@@ -15,7 +15,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o server main.go && ls -la /app
+RUN go build -o server main.go
 
 # Set the default command to run the application
 CMD ["./server"]
