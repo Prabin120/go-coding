@@ -11,16 +11,15 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
 
 func main() {
 	db.ConnectDB()
-
+	port := os.Getenv("PORT")
 	r := mux.NewRouter()
-
+	fmt.Println("port is", port)
 	questionController := &repository.Question{}
 	questionService := &usecases.QuestionService{Controller: questionController}
 	codeRunner := &repository.CodeRunner{}
@@ -36,18 +35,17 @@ func main() {
 	// CORS configuration using rs/cors
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000",
-								"http://localhost:3000/",
-								"https://aptitest.vercel.app",
-								"https://aptitest.vercel.app/"
+		"http://localhost:3000/", 
+		"https://aptitest.vercel.app", 
+		"https://aptitest.vercel.app/",
 							},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true, // Allow credentials if needed
 	})
-
-	fmt.Println("Start server on port 8080")
+	fmt.Println("Start server on port", port)
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + port,
 		Handler: corsHandler.Handler(r),
 	}
 	stop := make(chan os.Signal, 1)
