@@ -2,6 +2,7 @@ package main
 
 import (
 	"code-compiler/db"
+	"code-compiler/internal/middlewares"
 	"code-compiler/internal/repository"
 	"code-compiler/internal/routes"
 	"code-compiler/internal/usecases"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
@@ -29,16 +31,17 @@ func main() {
 	routes.RegisterQuestionRoutes(r, questionService)
 	routes.RegisterCodeRoutes(r, codeRunService)
 
-	r.HandleFunc("/", HealthCheck).Methods(http.MethodGet)
+	wrappedHealthCheck := middlewares.JWTMiddleware(http.HandlerFunc(HealthCheck))
+	r.Handle("/", wrappedHealthCheck).Methods(http.MethodGet)
 	r.HandleFunc("/test", runTest).Methods(http.MethodGet)
 
 	// CORS configuration using rs/cors
 	corsHandler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000",
-		"http://localhost:3000/", 
-		"https://aptitest.vercel.app", 
-		"https://aptitest.vercel.app/",
-							},
+		AllowedOrigins: []string{"http://localhost:3000",
+			"http://localhost:3000/",
+			"https://aptitest.vercel.app",
+			"https://aptitest.vercel.app/",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true, // Allow credentials if needed
