@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // Secret key used for signing the JWT
-var secretKey = os.Getenv("MONGO_URI") // Ensure this is set correctly
+var secretKey = os.Getenv("JWT_ACCESS_SECRET_KEY") // Ensure this is set correctly
 
 // JWT Middleware
 func JWTMiddleware(next http.Handler) http.Handler {
