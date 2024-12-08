@@ -2,10 +2,10 @@ package main
 
 import (
 	"code-compiler/db"
-	"code-compiler/internal/middlewares"
 	"code-compiler/internal/repository"
 	"code-compiler/internal/routes"
 	"code-compiler/internal/usecases"
+	"code-compiler/internal/middlewares"
 	"context"
 	"fmt"
 	"net/http"
@@ -30,10 +30,9 @@ func main() {
 	// Register routes from different files
 	routes.RegisterQuestionRoutes(r, questionService)
 	routes.RegisterCodeRoutes(r, codeRunService)
-
-	wrappedHealthCheck := middlewares.JWTMiddleware(http.HandlerFunc(HealthCheck))
-	r.Handle("/", wrappedHealthCheck).Methods(http.MethodGet)
-	r.HandleFunc("/test", runTest).Methods(http.MethodGet)
+	r.HandleFunc("/", HealthCheck).Methods(http.MethodGet)
+	wrappedCheckHealth := middlewares.IsValidUser(http.HandlerFunc(IsAuthenticated))
+	r.Handle("/is-authenticated", wrappedCheckHealth).Methods(http.MethodGet)
 
 	// CORS configuration using rs/cors
 	corsHandler := cors.New(cors.Options{
@@ -73,7 +72,4 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("Its comming")
 	fmt.Fprint(w, "Its working")
 }
-
-func runTest(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Hello")
-}
+func IsAuthenticated(w http.ResponseWriter, r *http.Request) {}
