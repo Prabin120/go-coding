@@ -6,6 +6,7 @@ import (
 	"code-compiler/internal/utils"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -24,7 +25,7 @@ func (r *Question) CreateQuestion(question *models.Question) (*models.Question, 
 		question.MemoryLimit == 0.0 || question.Solution == "" || question.CodeTemplates == nil || question.SampleTestCases == nil || question.Tags == nil || question.TimeLimit == 0 {
 		return nil, errors.New("please pass title, Description, Difficulty, MemoryLimit, Solution, CodeTemplate, SampleTestCases, Tags, TimeLimit")
 	}
-	slug, _ := r.GetQuestionBySlug(question.Slug)
+	slug, _ := r.GetQuestionBySlug(question.Slug, "")
 	if slug != nil {
 		return nil, errors.New("question already exists")
 	}
@@ -54,25 +55,105 @@ func (r *Question) GetQuestionsByTag(tagName string) ([]models.Question, error) 
 	}
 	return questions, nil
 }
-
-func (r *Question) GetQuestionBySlug(slug string) (*models.Question, error) {
-	var question models.Question
-	err := db.QuestionsCollection.FindOne(context.TODO(), bson.M{"slug": slug}).Decode(&question)
-	if err != nil {
-		return nil, err
+func AddFieldsStage(userId string) bson.M {
+	return bson.M{
+		"$addFields": bson.M{
+			"userStatus": bson.M{
+				"$ifNull": bson.A{
+					// Directly access the userId in the 'users' object, if it exists
+					bson.M{
+						"$ifNull": bson.A{
+							"$users." + userId, // Access the user field by userId directly
+							nil,                // Return null if the userId doesn't exist
+						},
+					},
+					nil, // In case users field is missing or userId does not exist, return null
+				},
+			},
+		},
 	}
-	return &question, nil
 }
 
-func (r *Question) GetQuestions() ([]models.Question, error) {
-	var questions []models.Question
-	cursor, err := db.QuestionsCollection.Find(context.TODO(), bson.M{})
+func (r *Question) GetQuestionBySlug(slug string, userId string) (*models.Question, error) {
+	// Define the aggregation pipeline
+	matchStage := bson.M{
+		"$match": bson.M{
+			"slug": slug, // Match question by slug
+		},
+	}
+	addFieldsStage := AddFieldsStage(userId)
+	projectStage := bson.M{
+		"$project": bson.M{
+			"users": 0, // Include userStatus in the projection
+		},
+	}
+	if userId == "" {
+		addFieldsStage = bson.M{}
+	}
+	pipeline := []bson.M{matchStage}
+	if userId != "" {
+		pipeline = append(pipeline, addFieldsStage)
+	}
+	pipeline = append(pipeline, projectStage)
+
+	// Execute the aggregation query
+	cursor, err := db.QuestionsCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute aggregation: %w", err)
 	}
+	defer cursor.Close(context.TODO())
+
+	// Store the results in a slice of questions
+	var results []models.Question
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		return nil, fmt.Errorf("failed to decode questions: %w", err)
+	}
+
+	// If no results are found, return nil
+	if len(results) == 0 {
+		return nil, nil // or any other error handling
+	}
+
+	// Return the first question (since you expect only one)
+	return &results[0], nil
+}
+
+func (r *Question) GetQuestions(userId string, skip int, limit int) ([]models.Question, error) {
+	var questions []models.Question
+	matchStage := bson.M{
+		"$match": bson.M{},
+	}
+	addFieldsStage := AddFieldsStage(userId)
+	projectStage := bson.M{
+		"$project": bson.M{
+			"_id":        1,
+			"slug":       1,
+			"title":      1,
+			"difficulty": 1,
+			"userStatus": 1,
+		},
+	}
+
+	pipeline := []bson.M{matchStage}
+	if userId != "" {
+		pipeline = append(pipeline, addFieldsStage)
+	}
+	pipeline = append(pipeline, projectStage)
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	// Use the Aggregate method instead of Find
+	cursor, err := db.QuestionsCollection.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return nil, err // Return the error
+	}
+	defer cursor.Close(context.TODO())
+
+	// Decode the cursor into the questions slice
 	if err = cursor.All(context.TODO(), &questions); err != nil {
-		log.Fatal(err)
+		return nil, err // Return the error
 	}
+
 	return questions, nil
 }
 

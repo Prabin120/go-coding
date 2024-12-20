@@ -26,10 +26,13 @@ func main() {
 	questionService := &usecases.QuestionService{Controller: questionController}
 	codeRunner := &repository.CodeRunner{}
 	codeRunService := &usecases.CodeRunnerService{Runner: codeRunner}
+	testRunner := &repository.Test{}
+	testService := &usecases.TestService{Controller: testRunner}
 
 	// Register routes from different files
 	routes.RegisterQuestionRoutes(r, questionService)
 	routes.RegisterCodeRoutes(r, codeRunService)
+	routes.RegisterTestRoutes(r, testService)
 	r.HandleFunc("/", HealthCheck).Methods(http.MethodGet)
 	wrappedCheckHealth := middlewares.IsValidUser(http.HandlerFunc(IsAuthenticated))
 	r.Handle("/is-authenticated", wrappedCheckHealth).Methods(http.MethodGet)
@@ -72,4 +75,6 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("Its comming")
 	fmt.Fprint(w, "Its working")
 }
-func IsAuthenticated(w http.ResponseWriter, r *http.Request) {}
+func IsAuthenticated(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Valid user")
+}

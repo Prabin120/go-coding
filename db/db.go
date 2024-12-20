@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	QuestionsCollection *mongo.Collection
-	TestCasesCollection *mongo.Collection
-	client              *mongo.Client // Move the client to a package-level variable
+	QuestionsCollection      *mongo.Collection
+	TestCasesCollection      *mongo.Collection
+	CodeSubmissionCollection *mongo.Collection
+	client                   *mongo.Client // Move the client to a package-level variable
 )
 
 // ConnectDB establishes a connection to MongoDB and returns a client.
@@ -38,6 +40,7 @@ func ConnectDB() {
 
 	QuestionsCollection = client.Database("code_compiler").Collection("questions")
 	TestCasesCollection = client.Database("code_compiler").Collection("testcases")
+	CodeSubmissionCollection = client.Database("code_compiler").Collection("codeSubmission")
 
 	createIndexes()
 
@@ -46,7 +49,9 @@ func ConnectDB() {
 
 func createIndexes() {
 	testCaseIndexModel := mongo.IndexModel{
-		Keys: bson.D{{Key: "questionId", Value: 1}}, // Index on questionID
+		Keys: bson.D{
+			{Key: "questionId", Value: 1},
+		}, // Index on questionID
 	}
 	_, err := TestCasesCollection.Indexes().CreateOne(context.TODO(), testCaseIndexModel)
 	if err != nil {
@@ -57,7 +62,9 @@ func createIndexes() {
 
 	// Create unique index on title in QuestionsCollection
 	questionTitleIndexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "slug", Value: 1}}, // Index on title
+		Keys: bson.D{
+			{Key: "slug", Value: 1},
+		}, // Index on title
 		Options: options.Index().SetUnique(true), // Unique index
 	}
 
@@ -66,6 +73,19 @@ func createIndexes() {
 		log.Fatal("Failed to create index on QuestionsCollection: ", err)
 	} else {
 		fmt.Println("Unique index created on QuestionsCollection for slug")
+	}
+
+	codeSubmissionCaseIndexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "question", Value: 1},
+			{Key: "userId", Value: 1},
+		},
+	}
+	_, err = CodeSubmissionCollection.Indexes().CreateOne(context.TODO(), codeSubmissionCaseIndexModel)
+	if err != nil {
+		log.Fatal("Failed to create index on CodeSubmissionCollection: ", err)
+	} else {
+		fmt.Println("Unique index created on CodeSubmissionCollection for question and email")
 	}
 }
 

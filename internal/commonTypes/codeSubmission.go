@@ -2,6 +2,7 @@ package commontypes
 
 // CodeRunnerType represents the structure of code runner input.
 type CodeRunnerType struct {
+	UserId	   string `json:"userId"`
 	Language   string `json:"language"`
 	Code       string `json:"code"`
 	QuestionId string `json:"questionId"`

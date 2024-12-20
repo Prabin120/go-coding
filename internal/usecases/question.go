@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"code-compiler/internal/middlewares"
 	"code-compiler/internal/models"
 	"code-compiler/internal/repository"
 	"encoding/json"
@@ -72,6 +73,10 @@ func (svc *QuestionService) GetQuestionById(w http.ResponseWriter, r *http.Reque
 func (svc *QuestionService) GetQuestionBySlug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	res := &models.Response{}
+	userId, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok {
+		userId = ""
+	}
 	res.Status = true
 	// Get the question ID from the URL parameters
 	queryParams := r.URL.Query()
@@ -82,7 +87,7 @@ func (svc *QuestionService) GetQuestionBySlug(w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusBadRequest)
 	}
 	// Call the controller to get the question by ID
-	question, err := svc.Controller.GetQuestionBySlug(slug)
+	question, err := svc.Controller.GetQuestionBySlug(slug, userId)
 	if err != nil {
 		res.Status = false
 		res.Message = err.Error()
@@ -103,9 +108,13 @@ func (svc *QuestionService) GetQuestionBySlug(w http.ResponseWriter, r *http.Req
 func (svc *QuestionService) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	res := &models.Response{}
+	userId, ok := r.Context().Value(middlewares.UserIDKey).(string)
+	if !ok {
+		userId = ""
+	}
 	res.Status = true
 	// Call the controller to get all questions
-	questions, err := svc.Controller.GetQuestions()
+	questions, err := svc.Controller.GetQuestions(userId, 0, 10)
 	if err != nil {
 		res.Status = false
 		res.Message = err.Error()

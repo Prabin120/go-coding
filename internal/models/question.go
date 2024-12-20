@@ -21,6 +21,8 @@ type Question struct {
 	IsPublic              bool                    `json:"isPublic,omitempty" bson:"isPublic"`               // Number of submissions for this question
 	SubmissionCount       int                     `json:"submissionCount,omitempty" bson:"submissionCount"` // Success rate (in percentage)
 	SuccessRate           float64                 `json:"successRate,omitempty" bson:"successRate"`
+	Users                 map[string]string       `json:"users,omitempty" bson:"users"`
+	UserStatus            string                  `json:"userStatus,omitempty" bson:"userStatus"`
 	CreatedAt             time.Time               `json:"createdAt,omitempty" bson:"createdAt"`
 	UpdatedAt             time.Time               `json:"updatedAt,omitempty" bson:"updatedAt"`
 }

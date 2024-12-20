@@ -3,8 +3,11 @@ package repository
 import (
 	"bufio"
 	"bytes"
+	"code-compiler/db"
 	commontypes "code-compiler/internal/commonTypes"
 	"code-compiler/internal/models"
+	"code-compiler/internal/utils"
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -14,6 +17,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // CodeRunner struct to execute code
@@ -228,6 +233,10 @@ func (r *CodeRunner) ExecuteTest(data commontypes.CodeRunnerType) ([]commontypes
 	if codeFilePath == "" {
 		return nil, fmt.Errorf("file creation failed")
 	}
+	hasImporta := utils.CheckRiskyImports(data.Code, data.Language)
+	if hasImporta {
+		return nil, fmt.Errorf("please don't use import statements: %v", err)
+	}
 	compiledFilePath, err := compileCode(codeFilePath, data.Language)
 	if err != nil {
 		return nil, fmt.Errorf("code compilation failed: %v", err)
@@ -246,6 +255,31 @@ func (r *CodeRunner) ExecuteTest(data commontypes.CodeRunnerType) ([]commontypes
 	return results, nil
 }
 
+func SaveUserSubmissionData(data *models.CodeSubmission) {
+	_, err := db.CodeSubmissionCollection.InsertOne(context.TODO(), data)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func SaveUserIdInQuestion(questionId string, userId string, status string) error {
+	filter := bson.M{"_id": questionId}
+	update := bson.M{
+		"$set": bson.M{
+			"users." + userId: status,
+		},
+	}
+	result := db.QuestionsCollection.FindOneAndUpdate(context.TODO(), filter, update)
+	if err := result.Err(); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("no question found with ID: %s", questionId)
+		}
+		return fmt.Errorf("error updating question: %v", err)
+	}
+	return nil
+}
+
 func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontypes.TestResult, int, int, error) {
 	question, err := r.Question.GetQuestionById(data.QuestionId)
 	if err != nil {
@@ -254,6 +288,10 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 	codeFilePath := fileWriter(data.Code, data.Language, question.CodeTemplates[data.Language])
 	if codeFilePath == "" {
 		return nil, 0, 0, fmt.Errorf("file creation failed")
+	}
+	hasImport := utils.CheckRiskyImports(data.Code, data.Language)
+	if hasImport {
+		return nil, 0, 0, fmt.Errorf("please don't use import statements: %v", err)
 	}
 	compiledFilePath, err := compileCode(codeFilePath, data.Language)
 	if err != nil {
@@ -265,7 +303,15 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 	} else {
 		fileRemoveName = compiledFilePath
 	}
+	codeToBeSave := &models.CodeSubmission{}
+	codeToBeSave.UserId = data.UserId
+	codeToBeSave.Question = data.QuestionId
+	codeToBeSave.Code = data.Code
+	codeToBeSave.Language = data.Language
+	userStatus := "attempted"
 	defer fileRemoving(fileRemoveName)
+	defer SaveUserSubmissionData(codeToBeSave)
+	defer SaveUserIdInQuestion(data.QuestionId, data.UserId, userStatus)
 	numberOfPassedTests := 0
 	totalTestCases := 0
 	var failedCase *commontypes.TestResult
@@ -278,5 +324,28 @@ func (r *CodeRunner) ExecuteSubmit(data commontypes.CodeRunnerType) (*commontype
 	if err != nil {
 		return failedCase, numberOfPassedTests, totalTestCases, err
 	}
+	codeToBeSave.FailedCase = failedCase
+	codeToBeSave.PassedTestCases = numberOfPassedTests
+	codeToBeSave.TotalTestCases = totalTestCases
+	if numberOfPassedTests == totalTestCases {
+		userStatus = "solved"
+	}
+	codeToBeSave.Err = ""
 	return failedCase, numberOfPassedTests, totalTestCases, nil
+}
+
+func (r *CodeRunner) GetUserSubmission(userId string, question string) ([]models.CodeSubmission, error) {
+	filter := bson.M{
+		"question": question,
+		"userId":   userId,
+	}
+	var result []models.CodeSubmission
+	cursor, err := db.CodeSubmissionCollection.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(context.TODO(), &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
