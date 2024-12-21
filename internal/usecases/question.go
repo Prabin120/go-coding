@@ -108,13 +108,17 @@ func (svc *QuestionService) GetQuestionBySlug(w http.ResponseWriter, r *http.Req
 func (svc *QuestionService) GetQuestions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	res := &models.Response{}
+	queryParams := r.URL.Query()
+	title := queryParams.Get("search")
+	difficulty := queryParams.Get("difficulty")
+	status := queryParams.Get("status")
 	userId, ok := r.Context().Value(middlewares.UserIDKey).(string)
 	if !ok {
 		userId = ""
 	}
 	res.Status = true
 	// Call the controller to get all questions
-	questions, err := svc.Controller.GetQuestions(userId, 0, 10)
+	questions, totalCount, err := svc.Controller.GetQuestions(userId, 0, title, difficulty, status)
 	if err != nil {
 		res.Status = false
 		res.Message = err.Error()
@@ -122,7 +126,10 @@ func (svc *QuestionService) GetQuestions(w http.ResponseWriter, r *http.Request)
 	}
 	// Populate the response with the retrieved questions
 	if res.Status {
-		res.Data = questions
+		res.Data = map[string]interface{}{
+			"questions":  questions,
+			"totalCount": totalCount,
+		}
 		w.WriteHeader(http.StatusOK)
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {

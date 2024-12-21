@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -118,12 +120,40 @@ func (r *Question) GetQuestionBySlug(slug string, userId string) (*models.Questi
 	return &results[0], nil
 }
 
-func (r *Question) GetQuestions(userId string, skip int, limit int) ([]models.Question, error) {
+func (r *Question) GetQuestions(userId string, skip int, title string, difficulty string, status string) ([]models.Question, int64, error) {
 	var questions []models.Question
+	matchConditions := bson.M{}
+	if title != "" {
+		matchConditions["title"] = bson.M{"$regex": title, "$options": "i"} // Case-insensitive regex
+	}
+	if difficulty != "" {
+		matchConditions["difficulty"] = difficulty
+	}
 	matchStage := bson.M{
-		"$match": bson.M{},
+		"$match": matchConditions,
 	}
 	addFieldsStage := AddFieldsStage(userId)
+
+	pipeline := []bson.M{matchStage}
+	if userId != "" {
+		pipeline = append(pipeline, addFieldsStage)
+	}
+
+	if status != "" && userId != "" {
+		pipeline = append(pipeline, bson.M{
+			"$match": bson.M{
+				"userStatus": status,
+			},
+		})
+	}
+	limit, err := strconv.Atoi(os.Getenv("PAGE_LIMIT"))
+	if err != nil {
+		limit = 10
+	}
+	paginationStages := []bson.M{
+		{"$skip": skip},
+		{"$limit": limit},
+	}
 	projectStage := bson.M{
 		"$project": bson.M{
 			"_id":        1,
@@ -133,28 +163,44 @@ func (r *Question) GetQuestions(userId string, skip int, limit int) ([]models.Qu
 			"userStatus": 1,
 		},
 	}
-
-	pipeline := []bson.M{matchStage}
-	if userId != "" {
-		pipeline = append(pipeline, addFieldsStage)
-	}
-	pipeline = append(pipeline, projectStage)
-	pipeline = append(pipeline, bson.M{"$skip": skip})
-	pipeline = append(pipeline, bson.M{"$limit": limit})
-
+	// pipeline = append(pipeline, projectStage)
+	// Facet stage to calculate count and get paginated results
+	pipeline = append(pipeline, bson.M{
+		"$facet": bson.M{
+			"metadata": []bson.M{
+				{"$count": "total"}, // Count total documents
+			},
+			"data": append([]bson.M{
+				projectStage,
+			}, paginationStages...), // Apply projection and pagination
+		},
+	})
 	// Use the Aggregate method instead of Find
 	cursor, err := db.QuestionsCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
-		return nil, err // Return the error
+		return nil, 0, err // Return the error
 	}
 	defer cursor.Close(context.TODO())
 
-	// Decode the cursor into the questions slice
-	if err = cursor.All(context.TODO(), &questions); err != nil {
-		return nil, err // Return the error
+	var results []struct {
+		Metadata []struct {
+			Total int64 `bson:"total"`
+		} `bson:"metadata"`
+		Data []models.Question `bson:"data"`
 	}
-
-	return questions, nil
+	// Decode the cursor into the questions slice
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		return nil, 0, err // Return the error
+	}
+	var totalCount int64
+	if len(results) > 0 && len(results[0].Metadata) > 0 {
+		totalCount = results[0].Metadata[0].Total
+		questions = results[0].Data
+	} else {
+		totalCount = 0
+		questions = []models.Question{}
+	}
+	return questions, totalCount, nil
 }
 
 // GetQuestion fetches a question by its ID and populates its test cases.
